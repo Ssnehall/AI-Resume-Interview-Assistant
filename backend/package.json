@@ -1,0 +1,25 @@
+{
+  "name": "ai-resume-assistant-backend",
+  "version": "1.0.0",
+  "description": "AI Resume + Interview Assistant Backend",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "keywords": ["ai", "resume", "langchain", "gemini"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/core": "^1.1.35",
+    "@langchain/google-genai": "^2.1.26",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "langchain": "^1.2.36",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "zod": "^3.23.8"
+  }
+}
