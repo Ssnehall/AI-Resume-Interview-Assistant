@@ -1,6 +1,7 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { generateQuestionsTool, evaluateAnswerTool, improveAnswerTool } from '../tools/interviewTools.js';
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
+import { retrieveRelevantChunks, hasVectorStore } from '../rag/vectorStore.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,6 +32,26 @@ function makeToolById(name) {
 export async function runAgent({ userMessage, resumeText = '', sessionId = 'default' }) {
   const history = getHistory(sessionId);
 
+  // ─── RAG: Retrieve relevant context instead of full resume ───
+  let contextText = '';
+  let ragUsed = false;
+
+  if (hasVectorStore(sessionId)) {
+    // Use RAG: retrieve only the most relevant chunks
+    const relevantChunks = await retrieveRelevantChunks(sessionId, userMessage, 3);
+    if (relevantChunks) {
+      contextText = relevantChunks;
+      ragUsed = true;
+      console.log('🧠 Agent: Using RAG context (relevant chunks only)');
+    }
+  }
+
+  // Fallback: use full resume text if RAG is not available
+  if (!ragUsed) {
+    contextText = resumeText ? resumeText.substring(0, 3000) : 'No resume uploaded yet.';
+    console.log('📄 Agent: Using full resume text (no RAG)');
+  }
+
   const systemMsg = new SystemMessage(`
 You are an expert AI Interview Coach named "Ace". Your mission is to provide world-class interview preparation that feels professional, encouraging, and highly structured—exactly like a premium GPT interaction.
 
@@ -48,8 +69,8 @@ You are an expert AI Interview Coach named "Ace". Your mission is to provide wor
 - \`evaluate_answer\`: Use this when they provide an answer for feedback.
 - \`improve_answer\`: Use this when they want a better version of their answer.
 
-### Candidate Context:
-Resume: ${resumeText ? resumeText.substring(0, 3000) : 'No resume uploaded yet.'}
+### Candidate Context${ragUsed ? ' (Retrieved via RAG - most relevant sections)' : ''}:
+${contextText}
 
 Remember: You are a coach, not just a generator. Guide them to success!
   `.trim());
@@ -93,5 +114,5 @@ Remember: You are a coach, not just a generator. Guide them to success!
     sessionHistories[sessionId] = history.slice(-20);
   }
 
-  return { response: aiResponse, sessionId };
+  return { response: aiResponse, sessionId, ragUsed };
 }

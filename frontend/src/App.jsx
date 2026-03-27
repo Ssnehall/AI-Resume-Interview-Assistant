@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './index.css'
 
-const API_BASE = 'http://localhost:5001/api'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 const SESSION_ID = `session_${Date.now()}`
 
 function formatTime(date) {
@@ -31,6 +31,7 @@ function MessageBubble({ msg }) {
 export default function App() {
   const [resumeText, setResumeText] = useState('')
   const [resumeFile, setResumeFile] = useState(null)
+  const [ragEnabled, setRagEnabled] = useState(false)
   const [uploadState, setUploadState] = useState('idle') // idle | loading | success | error
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -55,6 +56,7 @@ export default function App() {
 
     const formData = new FormData()
     formData.append('resume', file)
+    formData.append('sessionId', SESSION_ID)
 
     try {
       const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData })
@@ -63,10 +65,12 @@ export default function App() {
 
       setResumeText(data.resumeText)
       setResumeFile(file.name)
+      setRagEnabled(data.ragEnabled || false)
       setUploadState('success')
 
-      // Add welcome message
-      addMessage('assistant', `✅ Resume uploaded! I've parsed **${file.name}** (${data.textLength} characters).\n\nI'm ready to help you prepare for interviews! You can:\n• Ask me to **generate interview questions**\n• Give me a question and answer to **evaluate**\n• Ask me to **improve any answer**\n\nWhat would you like to do first?`)
+      // Add welcome message with RAG status
+      const ragMsg = data.ragEnabled ? `\n\n🧠 **RAG Enabled!** Your resume was split into **${data.chunksIngested} chunks** and stored as embeddings for smarter retrieval.` : ''
+      addMessage('assistant', `✅ Resume uploaded! I've parsed **${file.name}** (${data.textLength} characters).${ragMsg}\n\nI'm ready to help you prepare for interviews! You can:\n• Ask me to **generate interview questions**\n• Give me a question and answer to **evaluate**\n• Ask me to **improve any answer**\n\nWhat would you like to do first?`)
     } catch (err) {
       setUploadState('error')
       setError(err.message)
@@ -167,8 +171,9 @@ export default function App() {
                 <div className="upload-success-info">
                   📁 {resumeFile}<br />
                   {resumeText.length} characters extracted
+                  {ragEnabled && <><br />🧠 RAG: Active</>}
                 </div>
-                <button className="upload-again-btn" onClick={() => { setUploadState('idle'); setResumeText(''); setResumeFile(null) }}>
+                <button className="upload-again-btn" onClick={() => { setUploadState('idle'); setResumeText(''); setResumeFile(null); setRagEnabled(false) }}>
                   Upload different file
                 </button>
               </div>

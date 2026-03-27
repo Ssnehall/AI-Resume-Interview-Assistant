@@ -8,10 +8,16 @@
     "dev": "node src/index.js",
     "start": "node src/index.js"
   },
-  "keywords": ["ai", "resume", "langchain", "gemini"],
+  "keywords": [
+    "ai",
+    "resume",
+    "langchain",
+    "gemini"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@langchain/core": "^1.1.35",
     "@langchain/google-genai": "^2.1.26",
     "cors": "^2.8.5",
